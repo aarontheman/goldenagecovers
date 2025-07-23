@@ -1,46 +1,30 @@
 async function fetchRandomCover() {
-  // Wikimedia search for file pages only (actual image files)
-  const searchEndpoint = 'https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&list=search&srsearch=file:golden+age+comic+cover&srlimit=50';
+  // Wikimedia Commons: search specifically for image file titles
+  const searchEndpoint = 'https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrsearch=prefix:file:golden+age+comic+cover&gsrlimit=50&prop=imageinfo&iiprop=url';
 
   try {
     const response = await fetch(searchEndpoint);
     const data = await response.json();
 
-    if (data.query && data.query.search.length > 0) {
-      // Choose a random search result
-      const randomResult = data.query.search[Math.floor(Math.random() * data.query.search.length)];
-      const title = randomResult.title;
-      console.log("Search result title:", title);
+    if (data.query && data.query.pages) {
+      const pages = Object.values(data.query.pages);
+      const randomPage = pages[Math.floor(Math.random() * pages.length)];
+      const imageUrl = randomPage.imageinfo[0].url;
 
-      // Get image info for the selected file
-      const imageInfoEndpoint = `https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&titles=${encodeURIComponent(title)}&prop=imageinfo&iiprop=url`;
-
-      const imageInfoResponse = await fetch(imageInfoEndpoint);
-      const imageInfoData = await imageInfoResponse.json();
-      console.log("Image info response:", imageInfoData);
-
-      const pages = imageInfoData.query.pages;
-      const page = Object.values(pages)[0];
-
-      if (page.imageinfo && page.imageinfo[0].url) {
-        const imageUrl = page.imageinfo[0].url;
-        document.getElementById('cover').src = imageUrl;
-        document.getElementById('cover').alt = title;
-      } else {
-        throw new Error('Image info not available');
-      }
+      document.getElementById('cover').src = imageUrl;
+      document.getElementById('cover').alt = 'Golden Age Comic Cover';
     } else {
-      throw new Error('No search results');
+      throw new Error('No image results');
     }
   } catch (error) {
     console.error('Error loading image:', error);
     const cover = document.getElementById('cover');
-    cover.alt = 'Failed to load image';
     cover.src = '';
+    cover.alt = 'Failed to load image';
   }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('next').addEventListener('click', fetchRandomCover);
-  fetchRandomCover(); // Load one initially
+  fetchRandomCover();
 });
