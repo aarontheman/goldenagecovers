@@ -1,18 +1,30 @@
 async function fetchRandomCover() {
-  const endpoint = 'https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrsearch=golden+age+comic+cover&gsrlimit=50&prop=imageinfo&iiprop=url';
+  const searchEndpoint = 'https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&list=search&srsearch=file:golden+age+comic+cover&srlimit=50';
 
   try {
-    const response = await fetch(endpoint);
+    const response = await fetch(searchEndpoint);
     const data = await response.json();
 
-    if (data.query && data.query.pages) {
-      const pages = Object.values(data.query.pages);
-      const randomPage = pages[Math.floor(Math.random() * pages.length)];
-      const imageUrl = randomPage.imageinfo[0].url;
+    if (data.query && data.query.search.length > 0) {
+      const randomResult = data.query.search[Math.floor(Math.random() * data.query.search.length)];
+      const title = randomResult.title;
 
-      document.getElementById('cover').src = imageUrl;
+      const imageInfoEndpoint = `https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&titles=${encodeURIComponent(title)}&prop=imageinfo&iiprop=url`;
+
+      const imageInfoResponse = await fetch(imageInfoEndpoint);
+      const imageInfoData = await imageInfoResponse.json();
+
+      const pages = imageInfoData.query.pages;
+      const page = Object.values(pages)[0];
+
+      if (page.imageinfo && page.imageinfo[0].url) {
+        const imageUrl = page.imageinfo[0].url;
+        document.getElementById('cover').src = imageUrl;
+      } else {
+        throw new Error('Image info not available');
+      }
     } else {
-      throw new Error('No image results');
+      throw new Error('No search results');
     }
   } catch (error) {
     console.error('Error loading image:', error);
